@@ -1,3 +1,45 @@
+# Whisper Input MLX
+
+Voice input for M-series Mac. A modification of [mlx-whisper-dictation](https://github.com/computerstimulation/mlx-whisper-dictation).
+
+Changes:
+* "Transcribing" state representation on the system tray item as ⏳🎤︎
+* Default model: `mlx-community/whisper-large-v3-turbo`
+* Default timeout: 20 minutes
+
+### Installation
+
+```
+git clone https://github.com/alex-vt/WhisperInputMLX-fork
+cd WhisperInputMLX-fork
+brew install portaudio llvm
+python3.12 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+### Usage
+
+```
+./run.sh
+```
+
+Start/stop recording by pressing `Option`+`Command` key combo. The transcribed text will be inserted wherever the text input is at the moment when transcription finishes.
+
+_Note: if transcribed text isn't inserted, there may be a permission missing for `python3` in `System Settings`->`Privacy & Security` ->`Accessibility`; if key combo doesn't work, there may be permission missing for `python3` in `System Settings`->`Privacy & Security` ->`Input Monitoring`._
+
+### Auto-start
+
+To have the voice input available after system reboot without running `./run.sh`:
+
+```
+./install-launch-agent.sh
+```
+
+
+Original project's documentation preserved below.
+
+
 # MLX Whisper Dictation - Installation and Usage Guide
 
 [Watch the video on YouTube](https://youtu.be/O1NsoeECVAs?si=JMD7JCvD6LbahQU9)
