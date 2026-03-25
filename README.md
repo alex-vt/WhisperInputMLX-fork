@@ -3,7 +3,7 @@
 Voice input for M-series Mac. A modification of [mlx-whisper-dictation](https://github.com/computerstimulation/mlx-whisper-dictation).
 
 Changes:
-* "Transcribing" state representation on the system tray item as ⏳🎤︎
+* "Transcribing" state representation on the system tray item as ⏳
 * Default model: `mlx-community/whisper-large-v3-turbo`
 * Default timeout: 20 minutes
 

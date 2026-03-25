@@ -5,6 +5,8 @@ import pyaudio
 import numpy as np
 import rumps
 from pynput import keyboard
+from Foundation import NSThread
+from PyObjCTools import AppHelper
 
 # from whisper import load_model
 
@@ -190,6 +192,10 @@ class StatusBarApp(rumps.App):
 
     @rumps.clicked("Stop Recording")
     def stop_app(self, _):
+        if not NSThread.isMainThread():
+            AppHelper.callAfter(self.stop_app, None)
+            return
+
         if not self.started:
             return
 
@@ -205,12 +211,20 @@ class StatusBarApp(rumps.App):
         self.recorder.stop()
 
     def on_transcription_finished(self):
+        if not NSThread.isMainThread():
+            AppHelper.callAfter(self.on_transcription_finished)
+            return
+
         self.transcribing = False
         self.title = "⏯"
         self.menu["Start Recording"].set_callback(self.start_app)
         print("Done.\n")
 
     def toggle(self):
+        if not NSThread.isMainThread():
+            AppHelper.callAfter(self.toggle)
+            return
+
         if self.transcribing:
             return
 
