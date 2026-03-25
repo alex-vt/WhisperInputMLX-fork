@@ -44,9 +44,10 @@ class SpeechTranscriber:
 
 
 class Recorder:
-    def __init__(self, transcriber):
+    def __init__(self, transcriber, on_transcription_finished=None):
         self.recording = False
         self.transcriber = transcriber
+        self.on_transcription_finished = on_transcription_finished
 
     def start(self, language=None):
         thread = threading.Thread(target=self._record_impl, args=(language,))
@@ -79,6 +80,8 @@ class Recorder:
         audio_data = np.frombuffer(b"".join(frames), dtype=np.int16)
         audio_data_fp32 = audio_data.astype(np.float32) / 32768.0
         self.transcriber.transcribe(audio_data_fp32, language)
+        if self.on_transcription_finished is not None:
+            self.on_transcription_finished()
 
 
 class GlobalKeyListener:
@@ -157,10 +160,10 @@ class StatusBarApp(rumps.App):
         self.menu["Stop Recording"].set_callback(None)
 
         self.started = False
+        self.transcribing = False
         self.recorder = recorder
         self.max_time = max_time
         self.timer = None
-        self.elapsed_time = 0
 
     def change_language(self, sender):
         self.current_language = sender.title
@@ -171,8 +174,12 @@ class StatusBarApp(rumps.App):
 
     @rumps.clicked("Start Recording")
     def start_app(self, _):
+        if self.started or self.transcribing:
+            return
+
         print("Listening...")
         self.started = True
+        self.title = "🔴"
         self.menu["Start Recording"].set_callback(None)
         self.menu["Stop Recording"].set_callback(self.stop_app)
         self.recorder.start(self.current_language)
@@ -180,9 +187,6 @@ class StatusBarApp(rumps.App):
         if self.max_time is not None:
             self.timer = threading.Timer(self.max_time, lambda: self.stop_app(None))
             self.timer.start()
-
-        self.start_time = time.time()
-        self.update_title()
 
     @rumps.clicked("Stop Recording")
     def stop_app(self, _):
@@ -193,21 +197,23 @@ class StatusBarApp(rumps.App):
             self.timer.cancel()
 
         print("Transcribing...")
-        self.title = "⏯"
         self.started = False
+        self.transcribing = True
+        self.title = "⏳"
         self.menu["Stop Recording"].set_callback(None)
-        self.menu["Start Recording"].set_callback(self.start_app)
+        self.menu["Start Recording"].set_callback(None)
         self.recorder.stop()
+
+    def on_transcription_finished(self):
+        self.transcribing = False
+        self.title = "⏯"
+        self.menu["Start Recording"].set_callback(self.start_app)
         print("Done.\n")
 
-    def update_title(self):
-        if self.started:
-            self.elapsed_time = int(time.time() - self.start_time)
-            minutes, seconds = divmod(self.elapsed_time, 60)
-            self.title = f"({minutes:02d}:{seconds:02d}) 🔴"
-            threading.Timer(1, self.update_title).start()
-
     def toggle(self):
+        if self.transcribing:
+            return
+
         if self.started:
             self.stop_app(None)
         else:
@@ -349,9 +355,9 @@ if __name__ == "__main__":
 
     # removed model argument passing
     transcriber = SpeechTranscriber()
-    recorder = Recorder(transcriber)
-
-    app = StatusBarApp(recorder, args.language, args.max_time)
+    app = StatusBarApp(None, args.language, args.max_time)
+    recorder = Recorder(transcriber, on_transcription_finished=app.on_transcription_finished)
+    app.recorder = recorder
     if args.k_double_cmd:
         key_listener = DoubleCommandKeyListener(app)
     else:
